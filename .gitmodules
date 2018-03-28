@@ -1,0 +1,12 @@
+[submodule "vendor/roscpp_core"]
+	path = vendor/roscpp_core
+	url = https://github.com/ros/roscpp_core.git
+[submodule "vendor/winros"]
+	path = vendor/winros
+	url = https://github.com/ros-windows/win_ros.git
+[submodule "vendor/lz4"]
+	path = vendor/lz4
+	url = https://github.com/lz4/lz4.git
+[submodule "vendor/console_bridge"]
+	path = vendor/console_bridge
+	url = https://github.com/ros/console_bridge.git

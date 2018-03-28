@@ -136,7 +136,7 @@ int writeHeader(roslz4_stream *str) {
     return ROSLZ4_OUTPUT_SMALL; // Output must have 7 bytes
   }
 
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   writeUInt32((unsigned char*) str->output_next, kMagicNumber);
   int version = 1;
   char *out = str->output_next;
@@ -161,7 +161,7 @@ int writeEOS(roslz4_stream *str) {
     return ROSLZ4_OUTPUT_SMALL;
   }
 
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   state->finished = 1;
   writeUInt32((unsigned char*) str->output_next, kEndOfStream);
   advanceOutput(str, 4);
@@ -178,7 +178,7 @@ int writeEOS(roslz4_stream *str) {
 // If successfull, number of bytes written to output
 // If error, LZ4 return code
 int bufferToOutput(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   uint32_t uncomp_size = state->buffer_offset;
   if (state->buffer_offset == 0) {
     return 0; // No data to flush
@@ -222,7 +222,7 @@ int bufferToOutput(roslz4_stream *str) {
 // Copy as much data as possible from input to internal buffer
 // Return number of bytes written if successful, LZ4 error code on error
 int inputToBuffer(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (str->input_left == 0 ||
       state->buffer_size == state->buffer_offset) {
     return 0;
@@ -277,7 +277,7 @@ int streamStateAlloc(roslz4_stream *str) {
 }
 
 int streamResizeBuffer(roslz4_stream *str, int block_size_id) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (!(4 <= block_size_id && block_size_id <= 7)) {
     return ROSLZ4_PARAM_ERROR; // Invalid block size
   }
@@ -293,7 +293,7 @@ int streamResizeBuffer(roslz4_stream *str, int block_size_id) {
 }
 
 void streamStateFree(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (state != NULL) {
     if (state->buffer != NULL) {
       free(state->buffer);
@@ -318,7 +318,7 @@ int roslz4_compressStart(roslz4_stream *str, int block_size_id) {
 
 int roslz4_compress(roslz4_stream *str, int action) {
   int ret;
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (action != ROSLZ4_RUN && action != ROSLZ4_FINISH) {
     return ROSLZ4_PARAM_ERROR; // Unrecognized compression action
   } else if (state->finished) {
@@ -366,7 +366,7 @@ int roslz4_decompressStart(roslz4_stream *str) {
 // Return 1 if header is present, 0 if more data is needed,
 // LZ4 error code (< 0) if error
 int processHeader(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (str->total_in >= 7) {
     return 1;
   }
@@ -441,7 +441,7 @@ int processHeader(roslz4_stream *str) {
 
 // Read block size, return 1 if value is stored in state->block_size 0 otherwise
 int readBlockSize(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (state->block_size_read < 4) {
     fillUInt32(str, &state->block_size, &state->block_size_read);
     if (state->block_size_read == 4) {
@@ -461,7 +461,7 @@ int readBlockSize(roslz4_stream *str) {
 // Copy at most one blocks worth of data from input to internal buffer.
 // Return 1 if whole block has been read, 0 if not, LZ4 error otherwise
 int readBlock(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (state->block_size_read != 4 || state->block_size == kEndOfStream) {
     return ROSLZ4_ERROR;
   }
@@ -477,7 +477,7 @@ int readBlock(roslz4_stream *str) {
 }
 
 int decompressBlock(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (state->block_size_read != 4 || state->block_size != state->buffer_offset) {
     // Internal error: Can't decompress block, it's not in buffer
     return ROSLZ4_ERROR;
@@ -519,7 +519,7 @@ int decompressBlock(roslz4_stream *str) {
 }
 
 int readChecksum(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   fillUInt32(str, &state->stream_checksum, &state->stream_checksum_read);
   if (state->stream_checksum_read == 4) {
     state->finished = 1;
@@ -536,7 +536,7 @@ int readChecksum(roslz4_stream *str) {
 }
 
 int roslz4_decompress(roslz4_stream *str) {
-  stream_state *state = str->state;
+  stream_state *state = static_cast<stream_state *>(str->state);
   if (state->finished) {
     return ROSLZ4_ERROR; // Already reached end of stream
   }
