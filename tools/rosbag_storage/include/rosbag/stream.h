@@ -109,8 +109,11 @@ public:
 
 private:
     boost::shared_ptr<Stream> uncompressed_stream_;
-    boost::shared_ptr<Stream> bz2_stream_;
-    boost::shared_ptr<Stream> lz4_stream_;
+#ifndef DISABLE_COMPRESSION
+	boost::shared_ptr<Stream> bz2_stream_;
+	boost::shared_ptr<Stream> lz4_stream_;
+#endif // !DISABLE_COMPRESSION
+
 };
 
 class FileAccessor {
@@ -133,33 +136,34 @@ public:
     void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 };
 
+#ifndef DISABLE_COMPRESSION
 /*!
- * BZ2Stream uses libbzip2 (http://www.bzip.org) for reading/writing compressed data in the BZ2 format.
- */
+* BZ2Stream uses libbzip2 (http://www.bzip.org) for reading/writing compressed data in the BZ2 format.
+*/
 class ROSBAG_DECL BZ2Stream : public Stream
 {
 public:
-    BZ2Stream(ChunkedFile* file);
+	BZ2Stream(ChunkedFile* file);
 
-    CompressionType getCompressionType() const;
+	CompressionType getCompressionType() const;
 
-    void startWrite();
-    void write(void* ptr, size_t size);
-    void stopWrite();
+	void startWrite();
+	void write(void* ptr, size_t size);
+	void stopWrite();
 
-    void startRead();
-    void read(void* ptr, size_t size);
-    void stopRead();
+	void startRead();
+	void read(void* ptr, size_t size);
+	void stopRead();
 
-    void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
+	void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 
 private:
-    int     verbosity_;        //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
-    int     block_size_100k_;  //!< compression block size (1-9; 9 default). 9 is best compression, most memory
-    int     work_factor_;      //!< compression behavior for worst case, highly repetitive data (0-250; 30 default)
+	int     verbosity_;        //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
+	int     block_size_100k_;  //!< compression block size (1-9; 9 default). 9 is best compression, most memory
+	int     work_factor_;      //!< compression behavior for worst case, highly repetitive data (0-250; 30 default)
 
-    BZFILE* bzfile_;           //!< bzlib compressed file stream
-    int     bzerror_;          //!< last error from bzlib
+	BZFILE* bzfile_;           //!< bzlib compressed file stream
+	int     bzerror_;          //!< last error from bzlib
 };
 
 // LZ4Stream reads/writes compressed datat in the LZ4 format
@@ -167,31 +171,34 @@ private:
 class ROSBAG_DECL LZ4Stream : public Stream
 {
 public:
-    LZ4Stream(ChunkedFile* file);
-    ~LZ4Stream();
+	LZ4Stream(ChunkedFile* file);
+	~LZ4Stream();
 
-    CompressionType getCompressionType() const;
+	CompressionType getCompressionType() const;
 
-    void startWrite();
-    void write(void* ptr, size_t size);
-    void stopWrite();
+	void startWrite();
+	void write(void* ptr, size_t size);
+	void stopWrite();
 
-    void startRead();
-    void read(void* ptr, size_t size);
-    void stopRead();
+	void startRead();
+	void read(void* ptr, size_t size);
+	void stopRead();
 
-    void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
+	void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 
 private:
-    LZ4Stream(const LZ4Stream&);
-    LZ4Stream operator=(const LZ4Stream&);
-    void writeStream(int action);
+	LZ4Stream(const LZ4Stream&);
+	LZ4Stream operator=(const LZ4Stream&);
+	void writeStream(int action);
 
-    char *buff_;
-    int buff_size_;
-    int block_size_id_;
-    roslz4_stream lz4s_;
+	char *buff_;
+	int buff_size_;
+	int block_size_id_;
+	roslz4_stream lz4s_;
 };
+#endif // !DISABLE_COMPRESSION
+
+
 
 
 

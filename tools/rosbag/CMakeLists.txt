@@ -4,25 +4,30 @@ project(rosbag)
 if(NOT WIN32)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")
 endif()
-
+if(WITH_CATKIN)
 find_package(catkin REQUIRED COMPONENTS rosbag_storage rosconsole roscpp std_srvs topic_tools xmlrpcpp)
+endif()
 find_package(Boost REQUIRED COMPONENTS date_time regex program_options filesystem)
 find_package(BZip2 REQUIRED)
 
+if(WITH_CATKIN)
 catkin_python_setup()
-
+endif()
 # Support large bags (>2GB) on 32-bit systems
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS}
-  ${BZIP2_INCLUDE_DIR}
-)
+if(WITH_CATKIN)
+include_directories(include ${catkin_INCLUDE_DIRS})
+endif()
 
+include_directories(include ${Boost_INCLUDE_DIRS} ${BZIP2_INCLUDE_DIR})
+
+if(WITH_CATKIN)
 catkin_package(
   LIBRARIES rosbag
   INCLUDE_DIRS include
   CATKIN_DEPENDS rosbag_storage rosconsole roscpp std_srvs topic_tools xmlrpcpp)
-
+endif()
 add_library(rosbag
   src/player.cpp
   src/recorder.cpp
@@ -38,6 +43,8 @@ target_link_libraries(record rosbag)
 add_executable(play src/play.cpp)
 target_link_libraries(play rosbag)
 
+
+if(WITH_CATKIN)
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
@@ -62,7 +69,8 @@ catkin_install_python(PROGRAMS
   scripts/savemsg.py
   scripts/topic_renamer.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
+  
+endif()
 if(CATKIN_ENABLE_TESTING)
   catkin_add_nosetests(test)
 endif()

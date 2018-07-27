@@ -44,17 +44,23 @@ namespace rosbag {
 // StreamFactory
 
 StreamFactory::StreamFactory(ChunkedFile* file) :
-    uncompressed_stream_(new UncompressedStream(file)),
-    bz2_stream_         (new BZ2Stream(file)),
-    lz4_stream_         (new LZ4Stream(file))
+    uncompressed_stream_(new UncompressedStream(file))
+#ifdef ENABLE_COMPRESSION
+	,
+	bz2_stream_(new BZ2Stream(file)),
+	lz4_stream_(new LZ4Stream(file))
+#endif
+
 {
 }
 
 shared_ptr<Stream> StreamFactory::getStream(CompressionType type) const {
     switch (type) {
-        case compression::Uncompressed: return uncompressed_stream_;
-        case compression::BZ2:          return bz2_stream_;
-        case compression::LZ4:          return lz4_stream_;
+	case compression::Uncompressed: return uncompressed_stream_;
+#ifdef ENABLE_COMPRESSION
+	case compression::BZ2:          return bz2_stream_;
+	case compression::LZ4:          return lz4_stream_;
+#endif
         default:                        return shared_ptr<Stream>();
     }
 }

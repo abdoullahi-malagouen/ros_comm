@@ -221,8 +221,9 @@ void Bag::setCompression(CompressionType compression) {
 
 void Bag::writeVersion() {
     string version = string("#ROSBAG V") + VERSION + string("\n");
-
-    CONSOLE_BRIDGE_logDebug("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
+#endif // !DISABLE_CONSOLE_BRIDGE
 
     version_ = 200;
 
@@ -244,8 +245,9 @@ void Bag::readVersion() {
         throw BagIOException("Error reading version line");
 
     version_ = version_major * 100 + version_minor;
-
-    CONSOLE_BRIDGE_logDebug("Read VERSION: version=%d", version_);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read VERSION: version=%d", version_);
+#endif   
 }
 
 uint32_t Bag::getMajorVersion() const { return version_ / 100; }
@@ -334,7 +336,10 @@ void Bag::startReadingVersion102() {
         multiset<IndexEntry> const& index       = i->second;
         IndexEntry const&           first_entry = *index.begin();
 
-        CONSOLE_BRIDGE_logDebug("Reading message definition for connection %d at %llu", i->first, (unsigned long long) first_entry.chunk_pos);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("Reading message definition for connection %d at %llu", i->first, (unsigned long long) first_entry.chunk_pos);
+#endif
+		
 
         seek(first_entry.chunk_pos);
 
@@ -348,8 +353,11 @@ void Bag::writeFileHeaderRecord() {
     connection_count_ = connections_.size();
     chunk_count_      = chunks_.size();
 
-    CONSOLE_BRIDGE_logDebug("Writing FILE_HEADER [%llu]: index_pos=%llu connection_count=%d chunk_count=%d",
-              (unsigned long long) file_.getOffset(), (unsigned long long) index_data_pos_, connection_count_, chunk_count_);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Writing FILE_HEADER [%llu]: index_pos=%llu connection_count=%d chunk_count=%d",
+		(unsigned long long) file_.getOffset(), (unsigned long long) index_data_pos_, connection_count_, chunk_count_);
+#endif
+
     
     // Write file header record
     M_string header;
@@ -399,8 +407,11 @@ void Bag::readFileHeaderRecord() {
         readField(fields, CHUNK_COUNT_FIELD_NAME,      true, &chunk_count_);
     }
 
-    CONSOLE_BRIDGE_logDebug("Read FILE_HEADER: index_pos=%llu connection_count=%d chunk_count=%d",
-              (unsigned long long) index_data_pos_, connection_count_, chunk_count_);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read FILE_HEADER: index_pos=%llu connection_count=%d chunk_count=%d",
+		(unsigned long long) index_data_pos_, connection_count_, chunk_count_);
+#endif
+
 
     // Skip the data section (just padding)
     seek(data_size, std::ios::cur);
@@ -469,8 +480,11 @@ void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size
     chunk_header.compressed_size   = compressed_size;
     chunk_header.uncompressed_size = uncompressed_size;
 
-    CONSOLE_BRIDGE_logDebug("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
-              (unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
+		(unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
+#endif
+
 
     M_string header;
     header[OP_FIELD_NAME]          = toHeaderString(&OP_CHUNK);
@@ -494,7 +508,10 @@ void Bag::readChunkHeader(ChunkHeader& chunk_header) const {
     readField(fields, COMPRESSION_FIELD_NAME, true, chunk_header.compression);
     readField(fields, SIZE_FIELD_NAME,        true, &chunk_header.uncompressed_size);
 
-    CONSOLE_BRIDGE_logDebug("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double) chunk_header.compressed_size) / chunk_header.uncompressed_size);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double)chunk_header.compressed_size) / chunk_header.uncompressed_size);
+#endif
+
 }
 
 // Index records
@@ -515,7 +532,10 @@ void Bag::writeIndexRecords() {
 
         writeDataLength(index_size * 12);
 
-        CONSOLE_BRIDGE_logDebug("Writing INDEX_DATA: connection=%d ver=%d count=%d", connection_id, INDEX_VERSION, index_size);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("Writing INDEX_DATA: connection=%d ver=%d count=%d", connection_id, INDEX_VERSION, index_size);
+#endif
+        
 
         // Write the index record data (pairs of timestamp and position in file)
         foreach(IndexEntry const& e, index) {
@@ -523,7 +543,10 @@ void Bag::writeIndexRecords() {
             write((char*) &e.time.nsec, 4);
             write((char*) &e.offset,    4);
 
-            CONSOLE_BRIDGE_logDebug("  - %d.%d: %d", e.time.sec, e.time.nsec, e.offset);
+#ifndef DISABLE_CONSOLE_BRIDGE
+			CONSOLE_BRIDGE_logDebug("  - %d.%d: %d", e.time.sec, e.time.nsec, e.offset);
+#endif
+            
         }
     }
 }
@@ -545,7 +568,10 @@ void Bag::readTopicIndexRecord102() {
     readField(fields, TOPIC_FIELD_NAME, true, topic);
     readField(fields, COUNT_FIELD_NAME, true, &count);
 
-    CONSOLE_BRIDGE_logDebug("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
+#endif
+    
 
     if (index_version != 0)
         throw BagFormatException((format("Unsupported INDEX_DATA version: %1%") % index_version).str());
@@ -555,7 +581,10 @@ void Bag::readTopicIndexRecord102() {
     if (topic_conn_id_iter == topic_connection_ids_.end()) {
     	connection_id = connections_.size();
 
-        CONSOLE_BRIDGE_logDebug("Creating connection: id=%d topic=%s", connection_id, topic.c_str());
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("Creating connection: id=%d topic=%s", connection_id, topic.c_str());
+#endif
+		
         ConnectionInfo* connection_info = new ConnectionInfo();
         connection_info->id       = connection_id;
         connection_info->topic    = topic;
@@ -578,11 +607,16 @@ void Bag::readTopicIndexRecord102() {
         index_entry.time = Time(sec, nsec);
         index_entry.offset = 0;
 
-        CONSOLE_BRIDGE_logDebug("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
-
-        if (index_entry.time < ros::TIME_MIN || index_entry.time > ros::TIME_MAX)
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
+#endif
+        
+		if(index_entry.time.sec < 0 || index_entry.time.sec > UINT32_MAX)
         {
-          CONSOLE_BRIDGE_logError("Index entry for topic %s contains invalid time.", topic.c_str());
+#ifndef DISABLE_CONSOLE_BRIDGE
+			CONSOLE_BRIDGE_logError("Index entry for topic %s contains invalid time.", topic.c_str());
+#endif
+			
         } else
         {
           connection_index.insert(connection_index.end(), index_entry);
@@ -607,7 +641,10 @@ void Bag::readConnectionIndexRecord200() {
     readField(fields, CONNECTION_FIELD_NAME, true, &connection_id);
     readField(fields, COUNT_FIELD_NAME,      true, &count);
 
-    CONSOLE_BRIDGE_logDebug("Read INDEX_DATA: ver=%d connection=%d count=%d", index_version, connection_id, count);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read INDEX_DATA: ver=%d connection=%d count=%d", index_version, connection_id, count);
+#endif
+    
 
     if (index_version != 1)
         throw BagFormatException((format("Unsupported INDEX_DATA version: %1%") % index_version).str());
@@ -626,11 +663,17 @@ void Bag::readConnectionIndexRecord200() {
         read((char*) &index_entry.offset, 4);
         index_entry.time = Time(sec, nsec);
 
-        CONSOLE_BRIDGE_logDebug("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
+#endif
 
-        if (index_entry.time < ros::TIME_MIN || index_entry.time > ros::TIME_MAX)
+		if (index_entry.time.sec < 0 || index_entry.time.sec > UINT32_MAX)
         {
-          CONSOLE_BRIDGE_logError("Index entry for topic %s contains invalid time.  This message will not be loaded.", connections_[connection_id]->topic.c_str());
+          
+#ifndef DISABLE_CONSOLE_BRIDGE
+			CONSOLE_BRIDGE_logError("Index entry for topic %s contains invalid time.  This message will not be loaded.", connections_[connection_id]->topic.c_str());
+#endif
+			
         } else
         {
           connection_index.insert(connection_index.end(), index_entry);
@@ -648,8 +691,13 @@ void Bag::writeConnectionRecords() {
 }
 
 void Bag::writeConnectionRecord(ConnectionInfo const* connection_info) {
-    CONSOLE_BRIDGE_logDebug("Writing CONNECTION [%llu:%d]: topic=%s id=%d",
-              (unsigned long long) file_.getOffset(), getChunkOffset(), connection_info->topic.c_str(), connection_info->id);
+
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Writing CONNECTION [%llu:%d]: topic=%s id=%d",
+		(unsigned long long) file_.getOffset(), getChunkOffset(), connection_info->topic.c_str(), connection_info->id);
+#endif
+
+
 
     M_string header;
     header[OP_FIELD_NAME]         = toHeaderString(&OP_CONNECTION);
@@ -702,7 +750,10 @@ void Bag::readConnectionRecord() {
         connection_info->md5sum   = (*connection_info->header)["md5sum"];
         connections_[id] = connection_info;
 
-        CONSOLE_BRIDGE_logDebug("Read CONNECTION: topic=%s id=%d", topic.c_str(), id);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("Read CONNECTION: topic=%s id=%d", topic.c_str(), id);
+#endif
+        
     }
 }
 
@@ -728,7 +779,11 @@ void Bag::readMessageDefinitionRecord102() {
     if (topic_conn_id_iter == topic_connection_ids_.end()) {
     	uint32_t id = connections_.size();
 
-        CONSOLE_BRIDGE_logDebug("Creating connection: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("Creating connection: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+#endif
+
+
         connection_info = new ConnectionInfo();
         connection_info->id       = id;
         connection_info->topic    = topic;
@@ -747,7 +802,10 @@ void Bag::readMessageDefinitionRecord102() {
     (*connection_info->header)["md5sum"]             = connection_info->md5sum;
     (*connection_info->header)["message_definition"] = connection_info->msg_def;
 
-    CONSOLE_BRIDGE_logDebug("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+#endif
+    
 }
 
 void Bag::decompressChunk(uint64_t chunk_pos) const {
@@ -782,7 +840,10 @@ void Bag::decompressChunk(uint64_t chunk_pos) const {
 }
 
 void Bag::readMessageDataRecord102(uint64_t offset, ros::Header& header) const {
-    CONSOLE_BRIDGE_logDebug("readMessageDataRecord: offset=%llu", (unsigned long long) offset);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("readMessageDataRecord: offset=%llu", (unsigned long long) offset);
+#endif
+    
 
     seek(offset);
 
@@ -808,7 +869,10 @@ void Bag::decompressRawChunk(ChunkHeader const& chunk_header) const {
     assert(chunk_header.compression == COMPRESSION_NONE);
     assert(chunk_header.compressed_size == chunk_header.uncompressed_size);
 
-    CONSOLE_BRIDGE_logDebug("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+#endif
+    
 
     decompress_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) decompress_buffer_.getData(), chunk_header.compressed_size);
@@ -820,8 +884,12 @@ void Bag::decompressBz2Chunk(ChunkHeader const& chunk_header) const {
     assert(chunk_header.compression == COMPRESSION_BZ2);
 
     CompressionType compression = compression::BZ2;
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+#endif
 
-    CONSOLE_BRIDGE_logDebug("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+
+   
 
     chunk_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) chunk_buffer_.getData(), chunk_header.compressed_size);
@@ -836,9 +904,11 @@ void Bag::decompressLz4Chunk(ChunkHeader const& chunk_header) const {
     assert(chunk_header.compression == COMPRESSION_LZ4);
 
     CompressionType compression = compression::LZ4;
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("lz4 compressed_size: %d uncompressed_size: %d",
+		chunk_header.compressed_size, chunk_header.uncompressed_size);
+#endif
 
-    CONSOLE_BRIDGE_logDebug("lz4 compressed_size: %d uncompressed_size: %d",
-             chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     chunk_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) chunk_buffer_.getData(), chunk_header.compressed_size);
@@ -898,10 +968,13 @@ void Bag::writeChunkInfoRecords() {
         header[END_TIME_FIELD_NAME]   = toHeaderString(&chunk_info.end_time);
         header[COUNT_FIELD_NAME]      = toHeaderString(&chunk_connection_count);
 
-        CONSOLE_BRIDGE_logDebug("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d",
-                  (unsigned long long) file_.getOffset(), CHUNK_INFO_VERSION, (unsigned long long) chunk_info.pos,
-                  chunk_info.start_time.sec, chunk_info.start_time.nsec,
-                  chunk_info.end_time.sec, chunk_info.end_time.nsec);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d",
+			(unsigned long long) file_.getOffset(), CHUNK_INFO_VERSION, (unsigned long long) chunk_info.pos,
+			chunk_info.start_time.sec, chunk_info.start_time.nsec,
+			chunk_info.end_time.sec, chunk_info.end_time.nsec);
+#endif
+
 
         writeHeader(header);
 
@@ -915,7 +988,10 @@ void Bag::writeChunkInfoRecords() {
             write((char*) &connection_id, 4);
             write((char*) &count, 4);
 
-            CONSOLE_BRIDGE_logDebug("  - %d: %d", connection_id, count);
+#ifndef DISABLE_CONSOLE_BRIDGE
+			CONSOLE_BRIDGE_logDebug("  - %d: %d", connection_id, count);
+#endif
+            
         }
     }
 }
@@ -944,10 +1020,13 @@ void Bag::readChunkInfoRecord() {
     uint32_t chunk_connection_count = 0;
     readField(fields, COUNT_FIELD_NAME,      true, &chunk_connection_count);
 
-    CONSOLE_BRIDGE_logDebug("Read CHUNK_INFO: chunk_pos=%llu connection_count=%d start=%d.%d end=%d.%d",
-              (unsigned long long) chunk_info.pos, chunk_connection_count,
-              chunk_info.start_time.sec, chunk_info.start_time.nsec,
-              chunk_info.end_time.sec, chunk_info.end_time.nsec);
+#ifndef DISABLE_CONSOLE_BRIDGE
+	CONSOLE_BRIDGE_logDebug("Read CHUNK_INFO: chunk_pos=%llu connection_count=%d start=%d.%d end=%d.%d",
+		(unsigned long long) chunk_info.pos, chunk_connection_count,
+		chunk_info.start_time.sec, chunk_info.start_time.nsec,
+		chunk_info.end_time.sec, chunk_info.end_time.nsec);
+#endif
+
 
     // Read the topic count entries
     for (uint32_t i = 0; i < chunk_connection_count; i ++) {
@@ -955,7 +1034,10 @@ void Bag::readChunkInfoRecord() {
         read((char*) &connection_id,    4);
         read((char*) &connection_count, 4);
 
-        CONSOLE_BRIDGE_logDebug("  %d: %d messages", connection_id, connection_count);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("  %d: %d messages", connection_id, connection_count);
+#endif
+        
 
         chunk_info.connection_counts[connection_id] = connection_count;
     }
@@ -1037,7 +1119,10 @@ void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::
     total_bytes_read = 0;
     uint8_t op = 0xFF;
     do {
-        CONSOLE_BRIDGE_logDebug("reading header from buffer: offset=%d", offset);
+#ifndef DISABLE_CONSOLE_BRIDGE
+		CONSOLE_BRIDGE_logDebug("reading header from buffer: offset=%d", offset);
+#endif
+        
         uint32_t bytes_read;
         readHeaderFromBuffer(*current_buffer_, offset, header, data_size, bytes_read);
 

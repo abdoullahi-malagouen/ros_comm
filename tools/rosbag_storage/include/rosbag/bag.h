@@ -136,8 +136,12 @@ public:
     uint32_t        getMinorVersion() const;                      //!< Get the minor-version of the open bag file
     uint64_t        getSize()         const;                      //!< Get the current size of the bag file (a lower bound)
 
-    void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
-    CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
+#ifdef ENABLE_COMPRESSION
+	void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
+	CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
+#endif // ENABLE_COMPRESSION
+
+
     void            setChunkThreshold(uint32_t chunk_threshold);  //!< Set the threshold for creating new chunks
     uint32_t        getChunkThreshold() const;                    //!< Get the threshold for creating new chunks
 
